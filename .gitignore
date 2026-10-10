@@ -1,0 +1,19 @@
+# 忽略运行产物
+data/savefile.json
+data/test_save.json
+data/dex.json.bak
+
+# 环境与凭据
+.env
+*.token
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 系统
+.DS_Store
+
+# WorkBuddy 工作区文件（非项目交付物）
+.workbuddy/
