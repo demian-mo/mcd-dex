@@ -81,9 +81,32 @@ def encounter(dex, save):
             print("   🏅 达成新成就：%s" % "、".join(new_ach))
         print("   （图鉴进度 %d/%d，累计捕获 %d 只）" % (
             len(save.caught), len(dex.species), total))
+        drop_coupon()
     else:
         print()
         print("   💨 它挣脱薯条盒跑了……下次手快点。")
+
+
+def drop_coupon():
+    """收服后的随机掉落：50% 概率刷新出一张麦麦省券（只播报，不代领）。"""
+    import random as _r
+    if _r.random() > 0.5:
+        return
+    try:
+        from mcd_dex.live import fetch_coupon_pool
+    except ImportError:
+        from live import fetch_coupon_pool
+    print()
+    print("   💫 草丛里好像还掉了点什么……")
+    time.sleep(0.6)
+    pool = fetch_coupon_pool()
+    avail = [c for c in pool if c["status"] == "可领取"]
+    if not avail:
+        print("   翻了翻，只有几张过期传单。")
+        return
+    c = _r.choice(avail)
+    print("   🎫 掉落一张券：%s（%s）" % (c["title"], c["status"]))
+    print("   💡 去麦麦省/官方渠道领券使用——图鉴只负责报喜，不代领。")
 
 
 def main():

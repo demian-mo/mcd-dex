@@ -136,6 +136,19 @@ def shiny_report(campaigns: list[str] = None, text: str = None, limit: int = 8) 
 # 在线入口（带离线降级）
 # ----------------------------------------------------------
 
+def fetch_coupon_pool() -> list[dict]:
+    """拉取当前券池（含状态）。失败/无 Token 返回空列表，绝不抛异常。"""
+    try:
+        client = McHttpClient()
+        client.initialize()
+        result = client.call_tool("available-coupons")
+        text = "".join(x.get("text", "") for x in result.get("content", [])
+                       if x.get("type") == "text")
+        return parse_coupons(text)
+    except Exception:
+        return []
+
+
 def _client() -> Optional[McHttpClient]:
     try:
         return McHttpClient()
