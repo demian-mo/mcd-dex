@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import json
 import os
+import random
+import time
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
@@ -102,6 +104,15 @@ class Species:
         t = 0.0 if t < 0 else (1.0 if t > 1 else t)
         return int(out_lo + t * (out_hi - out_lo))
 
+    # ---------- 遭遇战 ----------
+    def silhouette(self) -> str:
+        """剪影形态：只露轮廓，不露脸。"""
+        if self.category == "饮饮科":
+            return " ▗▖ "
+        if self.category in ("薯薯科", "零嘴科"):
+            return " ▝▞ "
+        return " ▟▙ "
+
     # ---------- 渲染 ----------
     def card(self, owned: bool = True, detail: bool = False) -> str:
         s = self.stats()
@@ -164,6 +175,30 @@ class McDex:
         for members in lines.values():
             members.sort(key=lambda x: x.evo.get("stage", 0))
         return lines
+
+    # ---------- 遭遇战 ----------
+    # 每种稀有度的遭遇权重：常见满地走，闪光要碰运气
+    ENCOUNTER_WEIGHT = {"常见": 100, "稀有": 30, "史诗": 10, "传说": 4, "闪光": 4}
+    # 每种稀有度的单晃挣脱率（三晃全过才算收服）
+    ESCAPE_RATE = {"常见": 0.05, "稀有": 0.18, "史诗": 0.30, "传说": 0.40, "闪光": 0.42}
+
+    def roll_encounter(self) -> Species:
+        """按稀有度权重随机抽一只遭遇。"""
+        pool = list(self.species.values())
+        weights = [self.ENCOUNTER_WEIGHT.get(s.rarity, 20) for s in pool]
+        return random.choices(pool, weights=weights, k=1)[0]
+
+    def throw_fries(self, sp: Species) -> tuple[bool, list[str]]:
+        """丢出薯条盒，三晃判定。返回 (是否收服, 每晃事件文案)。"""
+        escape = self.ESCAPE_RATE.get(sp.rarity, 0.2)
+        shakes = []
+        for i in range(3):
+            if random.random() < escape:
+                shakes.append("薯条盒晃了晃……它探出头来！")
+                return False, shakes
+            shakes.append("稳住没挣脱。")
+        shakes.append("叮！锁定完成。")
+        return True, shakes
 
     # ---------- 列表渲染 ----------
     def grid(self, caught_ids: set[str] | None = None) -> str:
@@ -316,6 +351,8 @@ class SaveFile:
             data = json.loads(self.path.read_text(encoding="utf-8"))
             self.caught = data.get("caught", {})
             self.history = data.get("history", [])
+        self._seen_achievements = {name for name, desc, cond in self.ACHIEVEMENTS
+                                   if _safe_cond(cond, self)}
 
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -365,6 +402,23 @@ class SaveFile:
                 got = False
             rows.append("  %s %-8s %s" % ("🟩" if got else "⬜", name, desc))
         return "\n".join(rows)
+
+    def check_new_achievements(self) -> list[str]:
+        """对比快照，返回本次新达成的成就名。调用时机：捕获动作之后。"""
+        cur = {name for name, desc, cond in self.ACHIEVEMENTS
+               if _safe_cond(cond, self)}
+        newly = cur - set(self._seen_achievements)
+        self._seen_achievements = cur
+        if newly:
+            self.save()
+        return sorted(newly)
+
+
+def _safe_cond(cond, save):
+    try:
+        return bool(cond(save))
+    except Exception:
+        return False
 
 
 # ============================================================

@@ -6,6 +6,7 @@
 
 import os
 import sys
+import time
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
@@ -30,15 +31,59 @@ def menu():
     print("=" * 46)
     print("  1. 看图鉴（160 只全览，标注你抓过的）")
     print("  2. 查一只（输入名字，如：巨无霸）")
-    print("  3. 组队捕获（输入编号，空格分隔）")
-    print("  4. ✨ 闪光预报（今日上新/限定，需Token）")
-    print("  5. 🎫 券感知（查券池，需Token）")
-    print("  6. 我的成就")
+    print("  3. 🌲 出门觅食（随机遭遇战——真正的捕捉在这里）")
+    print("  4. 组队记录（把今天真吃过的登记进图鉴）")
+    print("  5. ✨ 闪光预报（今日上新/限定，需Token）")
+    print("  6. 🎫 券感知（查券池，需Token）")
+    print("  7. 我的成就")
     print("  0. 退出")
     print("-" * 46)
-    print("  新手推荐路线：先按 3，输入  MCD029 MCD006 MCD031")
-    print("  （巨无霸+大薯条+可乐，体验组合技）")
+    print("  新手推荐：先按 3 出门觅食，撞见什么看运气，")
+    print("  薯条盒三晃稳住才算抓到——闪光只有 4% 遭遇率。")
     print("=" * 46)
+
+
+def encounter(dex, save):
+    """随机遭遇战：撞见 → 丢薯条盒 → 三晃 → 收服或挣脱。"""
+    sp = dex.roll_encounter()
+    print()
+    print("🌲 草丛晃了一下……")
+    time.sleep(0.8)
+    rare_hint = {"闪光": "???: 一阵特别的气息，像是限时活动才会有的东西……",
+                 "史诗": "???: 个头不小，动静很大，不太好对付的样子。",
+                 "稀有": "???: 有几分特别的身影。", "常见": "???: 常见的身影。"}
+    print("   " + rare_hint[sp.rarity])
+    print()
+    print("   %s %s ｜%s ｜%s" % (sp.silhouette(), "？？？", sp.category, sp.rarity))
+    print()
+    while True:
+        cmd = input("   丢薯条盒按 y，转身离开按 n > ").strip().lower()
+        if cmd in ("y", "n"):
+            break
+        print("   按 y 或 n。")
+    if cmd == "n":
+        print("   你悄悄退出了草丛。它目送你离开。")
+        return
+    time.sleep(0.5)
+    caught, shakes = dex.throw_fries(sp)
+    for i, ev in enumerate(shakes, 1):
+        time.sleep(0.7)
+        print("   第%d晃 … %s" % (i, ev))
+    if caught:
+        print()
+        print("   ✅ 收服成功！")
+        print(sp.card(owned=True, detail=True))
+        save.caught[sp.id] = save.caught.get(sp.id, 0) + 1
+        save.save()
+        total = sum(save.caught.values())
+        new_ach = save.check_new_achievements()
+        if new_ach:
+            print("   🏅 达成新成就：%s" % "、".join(new_ach))
+        print("   （图鉴进度 %d/%d，累计捕获 %d 只）" % (
+            len(save.caught), len(dex.species), total))
+    else:
+        print()
+        print("   💨 它挣脱薯条盒跑了……下次手快点。")
 
 
 def main():
@@ -62,6 +107,8 @@ def main():
                 print()
                 print(sp.card(owned=sp.id in save.caught, detail=True))
         elif choice == "3":
+            encounter(dex, save)
+        elif choice == "4":
             raw = input("输入编号（空格分隔，如 MCD029 MCD006 MCD031）> ").strip()
             ids = [x for x in raw.split() if x]
             if not ids:
@@ -80,20 +127,20 @@ def main():
             save.snapshot_team(team)
             save.save()
             print("\n💾 已存档。")
-        elif choice == "4":
+        elif choice == "5":
             try:
                 from mcd_dex.live import shiny_forecast
                 shiny_forecast()
             except Exception as e:
                 print("实时功能暂时不可用：%s" % e)
-        elif choice == "5":
+        elif choice == "6":
             try:
                 from mcd_dex.live import coupon_radar
                 names = [dex.by_id(sid).name for sid in save.caught if dex.by_id(sid)]
                 coupon_radar(names[:12])
             except Exception as e:
                 print("实时功能暂时不可用：%s" % e)
-        elif choice == "6":
+        elif choice == "7":
             print(save.achievements_report())
         else:
             print("没这个选项。")
