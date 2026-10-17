@@ -38,37 +38,54 @@
 
 | 玩法 | 说明 |
 |---|---|
+| **🌲 出门觅食（主玩法）** | 随机遭遇战：草丛晃动，只露剪影——「???: 一阵特别的气息，像是限时活动才有的东西……」丢出薯条盒，三晃判定，稀有度越高越容易挣脱（闪光收服率仅约19%），逮到了图鉴卡当场展开 |
+| **🎫 随机掉券** | 收服成功后 50% 概率草丛掉落一张真实麦麦省券（来自官方券池，只播报不代领） |
 | **看图鉴** | 全物种列表、按科属/稀有度/关键词检索，未捕获的只有剪影 |
 | **组队伍** | 把你今天点的东西加进队伍，捕获播报直接亮出每只的完整图鉴卡（种族值 + 官方营养原值） |
 | **查合计** | 队伍总热量/蛋白质/脂肪/钠…对照每日参考值的百分比条 |
 | **触发组合技** | 堡+薯+可乐=「经典铁三角」，双辣同场=「双辣共鸣」，限定品=「闪光捕获」……7 种组合技等你自己撞出来 |
-| **集成就** | 初训师、闪光猎人、全图鉴…… 8 个成就，存档自动记录 |
+| **集成就** | 初训师、闪光猎人、全图鉴…… 8 个成就，达成即时播报，存档自动记录 |
 | **🎫 券感知**（需 Token） | 查当前麦麦省券池，自动匹配你图鉴里的物种——「你抓过的这只，今天有券」。**只读不领**，领券走官方渠道 |
 | **✨ 闪光预报**（需 Token） | 解析官方活动日历，上新/限定/联名/回归动向提前预警——「错过再等一年」从文案变成行动提醒 |
 
 **核心信条：吃饭就是抓宠，点单就是组队。**
 
-## 快速开始（离线可玩）
+遭遇战实况：
+
+```
+🌲 草丛晃了一下……
+   ???: 个头不小，动静很大，不太好对付的样子。
+
+    ▟▙  ？？？ ｜堡堡科 ｜史诗
+
+   丢薯条盒按 y，转身离开按 n > y
+   第1晃 … 稳住没挣脱。
+   第2晃 … 稳住没挣脱。
+   第3晃 … 薯条盒晃了晃……它探出头来！
+💨 它挣脱薯条盒跑了……下次手快点。
+```
+
+## 快速开始
+
+**最省事**：克隆后双击 `开始图鉴.command`（macOS），菜单式交互，推荐从这进。
 
 ```bash
-git clone https://github.com/你的用户名/mcd-dex.git
+git clone https://github.com/demian-mo/mcd-dex.git
 cd mcd-dex
 
-# 查看图鉴（160 只，全部来自麦当劳官方营养数据）
-python3 mcd_dex/dex_engine.py grid
+# 方式一：双击（macOS）——「开始图鉴.command」，菜单式游玩
+# 方式二：交互模式
+python3 play.py
 
-# 查询巨无霸
-python3 mcd_dex/dex_engine.py find 巨无霸
+# 方式三：命令行直用
+python3 mcd_dex/dex_engine.py grid          # 查看图鉴（160 只官方数据）
+python3 mcd_dex/dex_engine.py find 巨无霸    # 查询某只
+python3 mcd_dex/dex_engine.py team MCD029 MCD006 MCD031   # 组队
+python3 mcd_dex/dex_engine.py achieve       # 成就
 
-# 组一队：巨无霸 + 大薯条 + 可乐中杯
-python3 mcd_dex/dex_engine.py team MCD029 MCD006 MCD031
-
-# 查看成就
-python3 mcd_dex/dex_engine.py achieve
-
-# 券感知 + 闪光预报（需 MCP Token）
-python3 mcd_dex/dex_engine.py coupons
-python3 mcd_dex/dex_engine.py shiny
+# 实时情报（需 MCP Token）
+python3 mcd_dex/dex_engine.py coupons       # 券感知
+python3 mcd_dex/dex_engine.py shiny         # 闪光预报
 ```
 
 > 零第三方依赖，Python 3.9+ 直接跑。仓库自带的 `data/dex.json` 已是官方数据同步结果，开箱即玩。
@@ -101,18 +118,21 @@ python3 scripts/fetch_dex.py
 
 ```
 mcd-dex/
+├── 开始图鉴.command        # macOS 双击即玩入口
+├── play.py                # 交互模式（菜单式游玩，含遭遇战）
 ├── mcd_dex/
-│   ├── dex_engine.py      # 图鉴引擎：物种/种族值/队伍/组合技/存档/成就
-│   ├── live.py            # 实时情报：券感知 + 闪光预报（MCP，只读）
+│   ├── dex_engine.py      # 图鉴引擎：物种/种族值/遭遇战/薯条盒捕捉/组合技/存档/成就
+│   ├── live.py            # 实时情报：券感知 + 闪光预报 + 掉券池（MCP，只读）
 │   └── mcp_client.py      # 麦当劳 MCP 客户端（零依赖，urllib 实现）
 ├── scripts/
 │   └── fetch_dex.py       # 官方营养数据 -> 图鉴 同步脚本
 ├── data/
-│   └── dex.json           # 图鉴数据（官方同步结果）
+│   └── dex.json           # 图鉴数据（官方同步结果，160 只）
 ├── tests/
 │   └── test_engine.py     # 自测（33 项）
 ├── CONTEST_DECLARATION.md # 参赛声明
 ├── MCP_INTEGRATION.md     # MCP 接入说明
+├── mcp-config.example.json # 脱敏 MCP 配置示例
 └── workbuddy.md           # WorkBuddy 开发对话记录
 ```
 
